@@ -5,6 +5,8 @@
     [UnityEngine GameObject]
     [UnityEngine.UI Text]))
 
+(def max-text-height 30)
+
 (defn left-text [] (.. (object-named "Left Text") (GetComponent Text)))
 (defn right-text [] (.. (object-named "Right Text") (GetComponent Text)))
 
@@ -17,11 +19,10 @@
 (defn clear [txt]
   (text! txt ""))
 
-(defn push [txt s]
-  (text! txt (str (text txt) "\n" s)))
-
-(push (left-text) "ablssas")
-(clear (left-text))
+(defn lines [txt]
+  (-> (.text txt)
+      (string/split #"\n")
+      count))
 
 (defn drop-top [txt n]
   (->> (string/split (.text txt) #"\n")
@@ -35,11 +36,21 @@
        (string/join "\n")
        (text! txt)))
 
+(defn push [txt s]
+  (text! txt (str (text txt) "\n" s))
+  (drop-top txt (inc (- (lines txt) max-text-height))))
+
+(def colors
+  {:boring-beige "#c8b6a2ff"
+   :the-gentlemans-teal "#008b87ff"
+   :sea-foam "#77a3aaff"
+   })
+
 (def default-theme
-  [[#"(:[^\s]+)" "lime"]
-   [#"(\d+)" "orange"]
+  [[#"(:[^\s]+)" "#116611ff"]
+   [#"\b(\d+)\b" "#991111ff"]
    [#"(;;.*\n)" "#aaaaaaaa"]
-   [#"(defn|map)" "#990000"]
+   [#"\b(def|defn|map)\b" "#bb0062ff"]
    [#"(\(|\)|\[|\])" "#00000033"]])
 
 (defn highlight-code
@@ -51,3 +62,8 @@
                        (str "<color=" color ">$1</color>")))
      s
      theme)))
+
+;;           ;; hide our shame
+;;           (if-not (re-find #"Exception" result)
+;;             (ost/push (ost/left-text) (ost/highlight-code
+;;                                         (str prompt-string code result))))

@@ -3,13 +3,21 @@
         [arcadia core linear hydrate]
         [clojure pprint repl])
   (:require [clojure.set :as set]
-            [arcadia.introspection :as intro]))
-  (:import [UnityEngine
+            [arcadia.introspection :as intro]
+            [source2016.mesh :as m])
+  (:import UpdateHook
+           [UnityEngine
+            Time
             Color
             PhysicMaterial
             Transform
+            BoxCollider
             Rigidbody
-            Time]
+            Time
+            Collider
+            Mesh
+            CombineInstance
+            PhysicMaterialCombine]
            [UnityEngine
             MeshFilter MeshRenderer Shader
             Material GameObject Component
@@ -25,6 +33,15 @@
             Input
             Camera
             Application]))
+
+
+;; ==================================================
+;; stuff
+
+(defn kill! [x]
+  (let [spec (dehydrate x)]
+    (GameObject/Destroy x)
+    spec))
 
 ;; ============================================================
 ;; fun macros
@@ -83,9 +100,24 @@
 ;; ============================================================
 ;; physics!
 
+(defn pmc-convert [x]
+  (case x
+    :average PhysicMaterialCombine/Average
+    :minimum PhysicMaterialCombine/Minimum
+    :multiply PhysicMaterialCombine/Multiply
+    :maximum PhysicMaterialCombine/Maximum
+    x))
+
 (defn physic-material ^PhysicMaterial [m]
-  (let [^PhysicMaterial pm (PhysicMaterial.)]
-    (when-in-set! pm m
+  (let [^PhysicMaterial pm (PhysicMaterial.)
+        m2 (as-> m m
+             (if (contains? m :bounce-combine)
+               (update m :bounce-combine pmc-convert)
+               m)
+             (if (contains? m :friction-combine)
+               (update m :friction-combine pmc-convert)
+               m))]
+    (when-in-set! pm m2
       bounceCombine :bounce-combine
       bounciness :bounciness
       frictionCombine :friction-combine
@@ -179,9 +211,39 @@
   (defn raycast-forward [x]
     (raycast (forward-ray x))))
 
-(defn [x]
-  (+ 1 1))
+;; ============================================================
+;; meshes
 
-(defmacro hi-ther
-  ([x] :bla)
-  ([x y] :gra))
+;; (defn combine-meshes ^Mesh
+;;   ([meshes] (combine-meshes meshes nil))
+;;   ([meshes {:keys [merge-submeshes use-matrices]
+;;             :or {merge-submeshes true
+;;                  use-matrices false}}]
+;;    (let [f (fn [^Mesh m]
+;;              (let [^CombineInstance c (CombineInstance.)]
+;;                (set! (.mesh c) m)
+;;                c))
+;;          ^|UnityEngine.CombineInstance[]| cs (->> meshes
+;;                                                (map f)
+;;                                                (into-array UnityEngine.CombineInstance))
+;;          ^Mesh mesh (Mesh.)]
+;;      (.CombineMeshes mesh cs
+;;        merge-submeshes
+;;        use-matrices)
+;;      mesh)))
+
+
+(defn star-points [point-n, outer-r, inner-r]
+  (let [angstep (/ (* 2 Mathf/PI) point-n)
+        ps1 (->> (range point-n)
+              (mapcat
+                (fn [i]
+                  (let [p1 (v3
+                             (Mathf/Cos (* i angstep))
+                             (Mathf/Sin (* i angstep))
+                             0)
+                        p2 (qv* (aa (* Mathf/Rad2Deg (/ angstep 2)) 0 0 1)
+                             (v3* p1 (/ inner-r outer-r)))]
+                    [p1 p2])))
+              (map #(v3* % outer-r 2)))]
+    ps1))

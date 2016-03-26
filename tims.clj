@@ -294,7 +294,8 @@
 ;;      mesh)))
 
 (defn star-points [point-n, outer-r, inner-r]
-  (let [angstep (/ (* 2 Mathf/PI) point-n)
+  (let [point-n (int point-n)
+        angstep (/ (* 2 Mathf/PI) point-n)
         inner-rot (aa (* Mathf/Rad2Deg (/ angstep 2)) 0 0 1)
         ps1 (->> (range point-n)
               (mapcat
@@ -305,7 +306,7 @@
                              0)
                         p2 (qv* inner-rot (v3* p1 (/ inner-r outer-r)))]
                     [p1 p2])))
-              (map #(v3* % outer-r 2)))]
+              (map #(v3* % outer-r)))]
     ps1))
 
 ;; ============================================================

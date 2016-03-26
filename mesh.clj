@@ -281,7 +281,7 @@
     (set! (.normals m2) nrms)
     m2))
 
-(defn polygon-extrude ^Mesh [v3s extrusion-vector]
+(defn polygon-extrude ^Mesh [extrusion-vector v3s]
   (let [^Mesh t1 (triangulate v3s)
         ^Mesh t2 (translate-mesh
                    (reverse-mesh t1)

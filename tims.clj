@@ -6,6 +6,7 @@
             [arcadia.introspection :as intro]
             [source2016.mesh :as m])
   (:import UpdateHook
+           FixedUpdateHook
            [UnityEngine
             Time
             Color
@@ -43,6 +44,21 @@
   (let [spec (dehydrate x)]
     (GameObject/Destroy x)
     spec))
+  
+(def cube-spec
+  (kill! (create-primitive :cube)))
+
+(defn children [obj]
+  (for [tr (.transform (.gameObject obj))]
+    (.gameObject tr)))
+
+(defn rand*
+  ([]
+   (rand))
+  ([max]
+   (rand max))
+  ([min max]
+   (+ min (rand (- max min)))))
 
 ;; ============================================================
 ;; fun macros
@@ -101,6 +117,15 @@
 ;; ============================================================
 ;; physics!
 
+;; not that we use this anywhere
+(defn fm-convert [x]
+  (case x
+    :force ForceMode/Force
+    :acceleration ForceMode/Acceleration
+    :impulse ForceMode/Impulse
+    :velocity-change ForceMode/VelocityChange
+    x))
+
 (defn pmc-convert [x]
   (case x
     :average PhysicMaterialCombine/Average
@@ -125,6 +150,13 @@
       staticFriction :static-friction
       dynamicFriction :dynamic-friction)
     pm))
+
+(def bouncer
+  (physic-material
+    {:bounciness 0.9
+     :bounce-combine :average
+     :dynamic-friction 0
+     :friction-combine :minimum}))
 
 ;; ============================================================
 ;; selection
@@ -160,9 +192,37 @@
 (defn sel? [x]
   (contains? @global-selection x))
 
+;; ============================================================
+;; naming
+
+(defn bename [obj name]
+  (set! (.. obj name) name)
+  obj)
 
 ;; ============================================================
-;; chumpsi
+;; space
+
+
+;; (defmacro def-setter [name & path]
+;;   `(defn ~name [obj# ~@path]
+;;      (set-with! obj# [_ path#]
+;;        val#)
+;;      obj#))
+
+(defn set-pos [obj pos]
+  (set! (.. obj transform position) pos)
+  obj)
+
+(defn set-pos [obj pos]
+  (set! (.. obj transform position) pos)
+  obj)
+
+(defn set-rot [obj rot]
+  (set! (.. obj transform position) pos)
+  obj)
+
+;; ============================================================
+;; traversal
 
 (defn game-object-seq [x]
   (tree-seq
@@ -233,7 +293,6 @@
 ;;        use-matrices)
 ;;      mesh)))
 
-
 (defn star-points [point-n, outer-r, inner-r]
   (let [angstep (/ (* 2 Mathf/PI) point-n)
         inner-rot (aa (* Mathf/Rad2Deg (/ angstep 2)) 0 0 1)
@@ -244,7 +303,31 @@
                              (Mathf/Cos (* i angstep))
                              (Mathf/Sin (* i angstep))
                              0)
-                        p2 (qv* rot (v3* p1 (/ inner-r outer-r)))]
+                        p2 (qv* inner-rot (v3* p1 (/ inner-r outer-r)))]
                     [p1 p2])))
               (map #(v3* % outer-r 2)))]
     ps1))
+
+;; ============================================================
+;;
+
+(defn mesh-obj [mesh]
+  (let [obj (hydrate cube-spec)
+        mf (ensure-component obj MeshFilter)]
+    (set! (.mesh mf) mesh)
+    obj))
+
+(defn scumpit [objs]
+  (->> objs
+    (map #(v3scale (position %) (v3 1 0 1)))
+    m/triangulate
+    m/backfaced-mesh
+    mesh-obj))
+
+(defn scumpit2 [objs]
+  (->> objs
+    (map #(v3scale (position %) (v3 1 0 1)))
+    (m/polygon-extrude (v3 0 1 0))
+    m/backfaced-mesh
+    mesh-obj))
+

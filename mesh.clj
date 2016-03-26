@@ -292,10 +292,11 @@
                           :let [[p1 p2 p4 _ _ p3] vs ;; see tri-quad
                                 ]]
                       {:vertices vs
-                       :uvs {p1 (v2 1 0)
-                             p2 (v2 1 1)
-                             p3 (v2 0 1)
-                             p4 (v2 0 0)}}))
+                       :uvs (assoc {}
+                              p1 (v2 1 0)
+                              p2 (v2 1 1)
+                              p3 (v2 0 1)
+                              p4 (v2 0 0))}))
         ^Mesh m (combine-meshes [t1 ext t2])]
     (.RecalculateNormals m)
     m))

@@ -213,12 +213,12 @@
   (set! (.. obj transform position) pos)
   obj)
 
-(defn set-pos [obj pos]
-  (set! (.. obj transform position) pos)
+(defn set-scale [obj scl]
+  (set! (.. obj transform localScale) scl)
   obj)
 
 (defn set-rot [obj rot]
-  (set! (.. obj transform position) pos)
+  (set! (.. obj transform rotation) rot)
   obj)
 
 ;; ============================================================
